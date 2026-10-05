@@ -1,0 +1,14 @@
+# Postgres and Redis for local development and tests.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: synckit
+      POSTGRES_PASSWORD: synckit
+      POSTGRES_DB: mailrelay_dev
+    ports: ["5432:5432"]
+    volumes:
+      - ./scripts/create-test-db.sql:/docker-entrypoint-initdb.d/create-test-db.sql:ro
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
