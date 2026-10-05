@@ -50,12 +50,12 @@ export async function addDomain(db: Queryable, teamId: string, name: string, ver
     );
 }
 
-export async function isVerifiedDomain(db: Queryable, teamId: string, name: string): Promise<boolean> {
-    const { rowCount } = await db.query(
-        "SELECT 1 FROM domains WHERE team_id = $1 AND name = lower($2) AND verified_at IS NOT NULL",
-        [teamId, name],
+export async function verifiedDomains(db: Queryable, teamId: string, names: string[]): Promise<Set<string>> {
+    const { rows } = await db.query<{ name: string }>(
+        "SELECT name FROM domains WHERE team_id = $1 AND name = ANY ($2) AND verified_at IS NOT NULL",
+        [teamId, names],
     );
-    return rowCount === 1;
+    return new Set(rows.map((r) => r.name));
 }
 
 export async function createWebhookEndpoint(
