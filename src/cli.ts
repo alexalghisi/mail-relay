@@ -12,6 +12,7 @@ import { DeliveryQueue } from "./queue/deliveries.ts";
 import { queueStats, toEmf } from "./queue/stats.ts";
 import { DeliveryWorker } from "./queue/worker.ts";
 import { SmtpSender } from "./smtp/sender.ts";
+import { WebhookDispatcher } from "./webhooks/dispatcher.ts";
 
 type Command = (config: Config, args: string[]) => Promise<void>;
 
@@ -89,6 +90,18 @@ const commands: Record<string, Command> = {
             sender.close();
             await pool.end();
             log.info("stopped");
+        });
+    },
+
+    async webhooks(config) {
+        const log = createLogger("webhooks");
+        const pool = createPool(config.DATABASE_URL, 4);
+        const dispatcher = new WebhookDispatcher({ db: pool, logger: log });
+        dispatcher.start();
+        log.info("started");
+        onShutdown(async () => {
+            await dispatcher.stop();
+            await pool.end();
         });
     },
 
