@@ -13,7 +13,11 @@
         "worker": "node src/cli.ts worker",
         "webhooks": "node src/cli.ts webhooks",
         "mta": "node src/cli.ts mta",
-        "test:go": "cd go && go test ./..."
+        "test:go": "cd go && go test ./...",
+        "bench:throughput": "node bench/throughput.ts",
+        "bench:slow-domain": "node bench/slow-domain.ts",
+        "bench:api": "node bench/api-latency.ts",
+        "bench:explain": "node bench/explain.ts"
     },
     "engines": {
         "node": ">=22"
