@@ -1,0 +1,8 @@
+node_modules
+dist
+go
+infra
+bench
+test
+docs
+.git
