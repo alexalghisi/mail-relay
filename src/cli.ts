@@ -7,6 +7,11 @@ import { loadConfig, type Config } from "./config.ts";
 import { migrate } from "./db/migrate.ts";
 import { createPool } from "./db/pool.ts";
 import { createLogger } from "./log.ts";
+import { FakeMta } from "./mta/fake-mta.ts";
+import { DeliveryQueue } from "./queue/deliveries.ts";
+import { queueStats, toEmf } from "./queue/stats.ts";
+import { DeliveryWorker } from "./queue/worker.ts";
+import { SmtpSender } from "./smtp/sender.ts";
 
 type Command = (config: Config, args: string[]) => Promise<void>;
 
@@ -49,6 +54,58 @@ const commands: Record<string, Command> = {
             redis.disconnect();
             await pool.end();
         });
+    },
+
+    async worker(config) {
+        const log = createLogger("worker");
+        const pool = createPool(config.DATABASE_URL, 4);
+        const sender = new SmtpSender({
+            host: config.SMTP_HOST,
+            port: config.SMTP_PORT,
+            maxConnections: config.WORKER_CONCURRENCY,
+            timeoutMs: Math.min(30_000, (config.LEASE_SECONDS * 1000) / 2),
+        });
+        const queue = new DeliveryQueue(pool, {
+            leaseSeconds: config.LEASE_SECONDS,
+            defaultDomainConcurrency: config.DOMAIN_CONCURRENCY,
+            retryBaseMs: config.RETRY_BASE_MS,
+            retryCapMs: config.RETRY_CAP_MS,
+        });
+        const worker = new DeliveryWorker({ queue, sender, concurrency: config.WORKER_CONCURRENCY, logger: log });
+        worker.start();
+        log.info("started", { id: worker.id, concurrency: config.WORKER_CONCURRENCY, smtp: `${config.SMTP_HOST}:${config.SMTP_PORT}` });
+
+        const metrics = setInterval(() => {
+            queueStats(pool).then(
+                (stats) => (process.env.EMF_METRICS ? console.log(toEmf(stats)) : log.info("queue", { ...stats })),
+                () => undefined,
+            );
+        }, 60_000);
+
+        onShutdown(async () => {
+            log.info("draining in-flight sends");
+            clearInterval(metrics);
+            await worker.stop();
+            sender.close();
+            await pool.end();
+            log.info("stopped");
+        });
+    },
+
+    async mta(config) {
+        const slowDomains = Object.fromEntries(
+            (process.env.SLOW_DOMAINS ?? "")
+                .split(",")
+                .filter(Boolean)
+                .map((pair) => {
+                    const [domain = "", ms = "0"] = pair.split("=");
+                    return [domain, Number(ms)];
+                }),
+        );
+        const mta = new FakeMta({ slowDomains, logger: createLogger("mta") });
+        const port = await mta.listen(config.SMTP_PORT);
+        console.log(`fake MTA listening on ${port}`);
+        onShutdown(() => mta.close());
     },
 };
 
