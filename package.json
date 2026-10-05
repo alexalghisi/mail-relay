@@ -1,0 +1,38 @@
+{
+    "name": "mail-relay",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Email sending API with a Postgres-backed delivery queue, SMTP workers and signed webhooks",
+    "type": "module",
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "migrate": "node src/cli.ts migrate",
+        "seed": "node src/cli.ts seed",
+        "api": "node src/cli.ts api",
+        "worker": "node src/cli.ts worker",
+        "webhooks": "node src/cli.ts webhooks",
+        "mta": "node src/cli.ts mta"
+    },
+    "engines": {
+        "node": ">=22"
+    },
+    "license": "MIT",
+    "dependencies": {
+        "fastify": "^5.12.5",
+        "ioredis": "^6.0.0",
+        "nodemailer": "^10.0.14",
+        "pg": "^8.23.1",
+        "smtp-server": "^3.19.17",
+        "zod": "^3.25.76"
+    },
+    "devDependencies": {
+        "@types/node": "^22.20.5",
+        "@types/nodemailer": "^8.0.2",
+        "@types/pg": "^8.23.1",
+        "@types/smtp-server": "^3.5.13",
+        "typescript": "~5.9",
+        "vitest": "^3.2.7"
+    }
+}
