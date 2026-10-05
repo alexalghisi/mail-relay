@@ -5,7 +5,6 @@
     "description": "Email sending API with a Postgres-backed delivery queue, SMTP workers and signed webhooks",
     "type": "module",
     "scripts": {
-        "build": "tsc -p tsconfig.build.json",
         "typecheck": "tsc --noEmit",
         "test": "vitest run",
         "migrate": "node src/cli.ts migrate",
@@ -13,7 +12,8 @@
         "api": "node src/cli.ts api",
         "worker": "node src/cli.ts worker",
         "webhooks": "node src/cli.ts webhooks",
-        "mta": "node src/cli.ts mta"
+        "mta": "node src/cli.ts mta",
+        "test:go": "cd go && go test ./..."
     },
     "engines": {
         "node": ">=22"
